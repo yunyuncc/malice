@@ -77,3 +77,17 @@ TEST_CASE("event handler") {
     }
   }
 }
+TEST_CASE("native_handle") {
+  event ev(0, EPOLLIN);
+  struct epoll_event *eh = ev.native_handle();
+  CHECK(eh != nullptr);
+  event *evp = to_event(eh);
+  CHECK(evp == &ev);
+}
+TEST_CASE("set_flag") {
+  event ev(0, EPOLLIN);
+  auto flag = ev.get_flag();
+  flag |= EPOLLOUT;
+  ev.set_flag(flag);
+  CHECK(ev_str(ev.get_flag()) == "EPOLLIN|EPOLLOUT");
+}

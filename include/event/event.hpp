@@ -6,18 +6,24 @@
 namespace malice::event {
 class event {
 public:
-  // typedef std::function<void(const std::shared_ptr<event>&)> ev_handler_t;
   using ev_handler_t = std::function<void(event *e)>;
-  event(int fd, int flag);
+  event(int ev_fd, int flag);
   void set_handler(int flag, ev_handler_t func);
   void fire();
   int get_flag() { return ev.events; }
+  void set_flag(int flag) { ev.events = flag; }
+  struct epoll_event *native_handle() {
+    return &ev;
+  }
+  int get_fd() const { return fd; }
 
 private:
-  int fd;
+  const int fd;
   struct epoll_event ev;
   std::map<int, ev_handler_t> handlers;
 };
 
 std::string ev_str(int flag);
+
+inline event *to_event(struct epoll_event *e) { return (event *)e->data.ptr; }
 } // namespace malice::event

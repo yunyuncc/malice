@@ -8,9 +8,9 @@ static std::map<int, std::string> flag_event_map{
     {EPOLLET, "EPOLLET"},         {EPOLLONESHOT, "EPOLLONESHOT"},
     {EPOLLWAKEUP, "EPOLLWAKEUP"}, {EPOLLEXCLUSIVE, "EPOLLEXCLUSIVE"}};
 
-event::event(int fd, int flag) {
-  this->fd = fd;
+event::event(int ev_fd, int flag) : fd(ev_fd) {
   ev.events = flag;
+  ev.data.ptr = this;
 }
 
 void event::set_handler(int flag, ev_handler_t func) {
