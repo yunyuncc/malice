@@ -34,12 +34,15 @@ TEST_CASE("timeout event_loop") {
 TEST_CASE("wait event") {
   int fds[2] = {0};
   int ret = socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
-  int local = fds[0];
-  std::string msg = "hello";
-  int peer = fds[1];
   CHECK(ret != -1);
+
+  int local = fds[0];
+  int peer = fds[1];
   CHECK(local != 0);
   CHECK(peer != 0);
+
+  std::string msg = "hello";
+
   std::shared_ptr<event> ev = std::make_shared<event>(local, EPOLLIN);
   ev->set_handler(EPOLLIN, [&local, &msg](event *e) {
     CHECK(e->get_fd() == local);
@@ -49,8 +52,10 @@ TEST_CASE("wait event") {
     CHECK(msg == buf);
     cout << "recv:" << buf << endl;
   });
+
   event_loop ev_loop(-1);
   ev_loop.add_event(ev.get());
+
   std::async([&peer, &msg] {
     using namespace std::chrono_literals;
     std::this_thread::sleep_for(10ms);

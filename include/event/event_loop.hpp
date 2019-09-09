@@ -13,6 +13,7 @@ public:
   ~event_loop();
   void add_event(event *e);
   void del_event(event *e);
+  void mod_event(event *e);
   void set_timeout_handler(timeout_handler_t func) { timeout_handler = func; }
   void wait();
 
@@ -24,5 +25,6 @@ private:
 
 CREATE_NEW_EXCEPTION(create_event_loop_fail);
 CREATE_NEW_EXCEPTION(add_event_fail);
+CREATE_NEW_EXCEPTION(mod_event_fail);
 
 } // namespace malice::event

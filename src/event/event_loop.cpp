@@ -1,4 +1,5 @@
 #include "event/event_loop.hpp"
+#include <cassert>
 #include <iostream>
 #include <unistd.h>
 using std::cout;
@@ -15,14 +16,21 @@ event_loop::event_loop(int t_ms)
 }
 event_loop::~event_loop() { close(fd); }
 void event_loop::add_event(event *e) {
-  if (e == nullptr) {
-    throw add_event_fail("e is nullptr");
-  }
+  assert(e != nullptr);
   int ret = epoll_ctl(fd, EPOLL_CTL_ADD, e->get_fd(), e->native_handle());
   if (ret == -1) {
     throw add_event_fail(errno_str());
   }
 }
+
+void event_loop::mod_event(event *e) {
+  assert(e != nullptr);
+  int ret = epoll_ctl(fd, EPOLL_CTL_MOD, e->get_fd(), e->native_handle());
+  if (ret == -1) {
+    throw mod_event_fail(errno_str());
+  }
+}
+
 void event_loop::del_event(event *e) {
   epoll_ctl(fd, EPOLL_CTL_DEL, e->get_fd(), e->native_handle());
 }
