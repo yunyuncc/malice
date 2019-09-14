@@ -51,6 +51,7 @@ TEST_CASE("wait event") {
     CHECK(s == msg.size());
     CHECK(msg == buf);
     cout << "recv:" << buf << endl;
+    close(local);
   });
 
   event_loop ev_loop(-1);
@@ -62,6 +63,7 @@ TEST_CASE("wait event") {
     auto s = write(peer, msg.data(), msg.size());
     CHECK(s == msg.size());
     cout << "write:" << msg << endl;
+    close(peer);
   });
   ev_loop.wait();
 }
