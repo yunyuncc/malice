@@ -14,11 +14,21 @@ event::event(int ev_fd, int flag) : fd(ev_fd) {
 }
 
 void event::set_handler(int flag, ev_handler_t func) {
-  for (auto it = flag_event_map.begin(); it != flag_event_map.end(); ++it) {
-    if (it->first & flag) {
-      handlers[it->first] = func;
+  // for (auto it = flag_event_map.begin(); it != flag_event_map.end(); ++it) {
+  //  if (it->first & flag) {
+  //    handlers[it->first] = func;
+  //  }
+  //}
+  int old_flag = 0;
+  for (auto it = handlers.begin(); it != handlers.end(); ++it) {
+    if (flag & it->first) {
+      old_flag |= it->first;
     }
   }
+  if (old_flag != 0) {
+    throw event_mult_handler(ev_str(old_flag));
+  }
+  handlers[flag] = func;
 }
 void event::fire() {
   for (auto [k, v] : handlers) {

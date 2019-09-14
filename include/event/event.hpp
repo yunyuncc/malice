@@ -1,4 +1,5 @@
 #pragma once
+#include "base/tool.hpp"
 #include <functional>
 #include <map>
 #include <memory>
@@ -26,4 +27,5 @@ private:
 std::string ev_str(int flag);
 
 inline event *to_event(struct epoll_event *e) { return (event *)e->data.ptr; }
+CREATE_NEW_EXCEPTION(event_mult_handler);
 } // namespace malice::event

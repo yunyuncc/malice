@@ -77,3 +77,21 @@ TEST_CASE("set_flag") {
   ev.set_flag(flag);
   CHECK(ev_str(ev.get_flag()) == "EPOLLIN|EPOLLOUT");
 }
+TEST_CASE("set event_handler fail") {
+  auto ev = std::make_shared<event>(0, EPOLLIN);
+  ev->set_handler(EPOLLIN, nullptr);
+  try {
+    ev->set_handler(EPOLLIN | EPOLLOUT, nullptr);
+  } catch (const event_mult_handler &e) {
+    std::string msg = e.what();
+    CHECK(msg == "EPOLLIN");
+  }
+  try {
+    ev->set_handler(EPOLLPRI, nullptr);
+    CHECK(true);
+    ev->set_handler(EPOLLIN | EPOLLOUT | EPOLLPRI, nullptr);
+  } catch (const event_mult_handler &e) {
+    std::string msg = e.what();
+    CHECK(msg == "EPOLLIN|EPOLLPRI");
+  }
+}

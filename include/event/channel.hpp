@@ -16,6 +16,8 @@ public:
   void write(std::string &buf);
 
 private:
+  //处理读事件，将数据读入缓冲区
+  void handle_read(event *e);
   //重新注册event到event_loop中去
   void update_event() { ev_loop->mod_event(ev.get()); }
   static const int read_event;

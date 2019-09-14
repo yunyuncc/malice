@@ -1,7 +1,12 @@
 #include "event/channel.hpp"
+#include <cassert>
+#include <iostream>
+using std::cout;
+using std::endl;
 namespace malice::event {
 channel::channel(int fd, event_loop *loop)
     : ev(std::make_unique<event>(fd, none_event)), ev_loop(loop) {
+  ev->set_handler(read_event, [this](event *e) { handle_read(e); });
   ev_loop->add_event(ev.get());
 }
 channel::~channel() { ev_loop->del_event(ev.get()); }
@@ -26,6 +31,11 @@ void channel::enable_write(bool enable) {
     int flag = ev->get_flag();
     flag &= ~write_event;
   }
+}
+void channel::handle_read(event *e) {
+  assert(e->native_handle() == ev->native_handle());
+  std::string msg = ev_str(e->get_flag());
+  cout << "msg:" << msg << endl;
 }
 
 const int channel::read_event = EPOLLIN | EPOLLPRI;
