@@ -11,13 +11,10 @@ using namespace malice::event;
 TEST_CASE("create_event_loop_fail") {
   try {
     throw create_event_loop_fail("for test");
-    CHECK(false);
   } catch (const create_event_loop_fail &e) {
     CHECK(true);
     std::string msg = e.what();
     CHECK(msg == "for test");
-  } catch (const std::runtime_error &e) {
-    CHECK(false);
   }
 }
 TEST_CASE("timeout event_loop") {
@@ -66,5 +63,35 @@ TEST_CASE("wait event") {
     close(peer);
   });
   ev_loop.wait();
+}
+//添加event到event_loop失败
+TEST_CASE("add event fail"){
+    event_loop ev_loop(100);
+    auto ev = std::make_shared<event>(-1, EPOLLIN);
+    try{
+        ev_loop.add_event(ev.get());
+    }catch(const add_event_fail& e){
+        std::string msg = e.what();
+        CHECK(msg == "Bad file descriptor");
+    }
+}
+//修改event成功和失败
+TEST_CASE("mod event fail"){
+    event_loop loop(100);
+    auto ev = std::make_shared<event>(0, EPOLLIN);
+    loop.add_event(ev.get());
+    int flag = ev->get_flag();
+    flag |= EPOLLOUT;
+    ev->set_flag(flag);
+    loop.mod_event(ev.get());
+
+    auto ev2 = std::make_shared<event>(1, EPOLLIN);
+    try{
+        loop.mod_event(ev2.get());
+    }catch(const mod_event_fail& e){
+        std::string msg = e.what();
+        CHECK(msg == "No such file or directory");
+    }
+
 }
 // TODO: event_loop 怎么处理已经析构掉的event

@@ -8,10 +8,11 @@ if not os.path.exists("build"):
 
 os.chdir("build")
 run("cmake ..")
+run("make")
 run("make test")
 run("rm -rf gcov_out")
 run("rm -f coverage.info")
-run("lcov --capture --directory . --output-file coverage.info")
+run("lcov -b . --capture --directory .  --output-file coverage.info")
 run("genhtml coverage.info --output-directory gcov_out")
 pwd = os.getcwd()
 html_path = pwd + "/gcov_out"

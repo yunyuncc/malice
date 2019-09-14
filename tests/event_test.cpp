@@ -8,6 +8,7 @@ TEST_CASE("ev_str") {
   CHECK(ev_str(EPOLLIN | EPOLLOUT | EPOLLERR) == "EPOLLIN|EPOLLOUT|EPOLLERR");
   CHECK(ev_str(0) == "");
 }
+
 TEST_CASE("event handler") {
   SUBCASE("one event") {
     std::shared_ptr<event> ev(new event(0, EPOLLIN));
@@ -18,21 +19,6 @@ TEST_CASE("event handler") {
         counter++;
         int flag = e->get_flag();
         CHECK((flag & EPOLLIN) == true);
-      });
-      CHECK(counter == 0);
-      ev->fire();
-      CHECK(counter == 1);
-    }
-    SUBCASE("two handler") {
-      int counter = 0;
-      ev->set_handler(EPOLLIN, [&counter](event *e) {
-        counter++;
-        int flag = e->get_flag();
-        CHECK((flag & EPOLLIN) == true);
-      });
-      ev->set_handler(EPOLLOUT, [&counter](event *) {
-        counter++;
-        CHECK(false);
       });
       CHECK(counter == 0);
       ev->fire();

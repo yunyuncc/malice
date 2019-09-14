@@ -16,3 +16,7 @@ add_test(NAME event_loop_test COMMAND event_loop_test)
 add_executable(channel_test channel_test.cpp)
 target_link_libraries(channel_test malice_event ${test_libs})
 add_test(NAME channel_test COMMAND channel_test)
+
+add_executable(tool_test tool_test.cpp)
+target_link_libraries(tool_test malice_event ${test_libs})
+add_test(NAME tool_test COMMAND tool_test)
