@@ -12,7 +12,7 @@ buffer::buffer(size_t size) : buf(size + prepend_size) {
   assert(writable_size() == init_size);
 }
 
-void buffer::ensure_space(size_t len) {
+void buffer::ensure_writable(size_t len) {
   reset_if_no_readable();
   if (writable_size() >= len) {
     return;
