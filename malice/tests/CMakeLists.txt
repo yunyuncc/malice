@@ -1,5 +1,5 @@
 include_directories(${CMAKE_SOURCE_DIR}/extern/header_only)
-include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/malice/include)
 
 set(test_libs malice_event malice_base pthread gcov)
 
