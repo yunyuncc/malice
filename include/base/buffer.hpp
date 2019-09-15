@@ -24,6 +24,7 @@ public:
     }
   }
   void has_writen(size_t len) { write_idx += len; }
+  // buffer的初始状态
   bool is_clean() const {
     return (read_idx == prepend_size) && (write_idx == prepend_size);
   }
@@ -64,7 +65,5 @@ private:
   size_t read_idx;
   size_t write_idx;
 };
-
-CREATE_NEW_EXCEPTION(buffer_full);
 
 } // namespace malice::base

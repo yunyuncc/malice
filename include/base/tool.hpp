@@ -11,11 +11,13 @@
   }
 #endif
 namespace malice::base {
-inline std::string errno_str() {
-  int e = errno;
+
+inline std::string errno_str(int e) {
   char buf[512];
   std::string e_str = strerror_r(e, buf, sizeof(buf));
   return e_str;
 }
+
+inline std::string errno_str() { return errno_str(errno); }
 
 } // namespace malice::base

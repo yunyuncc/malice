@@ -11,6 +11,7 @@ public:
   using timeout_handler_t = std::function<void()>;
   event_loop(int timeout_ms);
   ~event_loop();
+  // TODO assert in loop thread
   void add_event(event *e);
   void del_event(event *e);
   void mod_event(event *e);
