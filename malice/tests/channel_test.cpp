@@ -1,5 +1,5 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include "doctest.h"
+#include <doctest/doctest.h>
 #include "event/channel.hpp"
 #include <atomic>
 #include <sys/socket.h>
@@ -89,7 +89,6 @@ TEST_CASE("call default_on_close and write_buf full") {
   local.set_read_handler([&msg, &read_count](::malice::base::buffer &buf) {
     read_count++;
     if (read_count == 1) {
-      INFO("readable:" << buf.readable_size());
       CHECK(buf.readable_size() == msg.size());
     } else if (read_count == 2) {
       CHECK(buf.readable_size() == msg.size() * 2);

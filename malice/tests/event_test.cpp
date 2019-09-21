@@ -1,5 +1,5 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include "doctest.h"
+#include <doctest/doctest.h>
 #include "event/event.hpp"
 using namespace malice::event;
 TEST_CASE("ev_str") {
