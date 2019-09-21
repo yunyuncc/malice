@@ -24,7 +24,6 @@ private:
   timeout_handler_t timeout_handler;
 };
 
-CREATE_NEW_EXCEPTION(create_event_loop_fail);
 CREATE_NEW_EXCEPTION(add_event_fail);
 CREATE_NEW_EXCEPTION(mod_event_fail);
 

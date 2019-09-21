@@ -10,9 +10,7 @@ using malice::base::errno_str;
 static const size_t MAX_ACTIVE_EVENTS = 256;
 event_loop::event_loop(int t_ms)
     : fd(epoll_create1(EPOLL_CLOEXEC)), timeout_ms(t_ms) {
-  if (fd == -1) {
-    throw create_event_loop_fail(errno_str());
-  }
+  assert(fd != -1);
 }
 event_loop::~event_loop() { close(fd); }
 void event_loop::add_event(event *e) {

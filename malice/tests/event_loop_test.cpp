@@ -4,19 +4,13 @@
 #include <chrono>
 #include <future>
 #include <iostream>
+#include <signal.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
 using namespace std;
 using namespace malice::event;
-TEST_CASE("create_event_loop_fail") {
-  try {
-    throw create_event_loop_fail("for test");
-  } catch (const create_event_loop_fail &e) {
-    CHECK(true);
-    std::string msg = e.what();
-    CHECK(msg == "for test");
-  }
-}
+
 TEST_CASE("timeout event_loop") {
   event_loop ev_loop(100);
   int count = 0;
@@ -65,33 +59,48 @@ TEST_CASE("wait event") {
   ev_loop.wait();
 }
 //添加event到event_loop失败
-TEST_CASE("add event fail"){
-    event_loop ev_loop(100);
-    auto ev = std::make_shared<event>(-1, EPOLLIN);
-    try{
-        ev_loop.add_event(ev.get());
-    }catch(const add_event_fail& e){
-        std::string msg = e.what();
-        CHECK(msg == "Bad file descriptor");
-    }
+TEST_CASE("add event fail") {
+  event_loop ev_loop(100);
+  auto ev = std::make_shared<event>(-1, EPOLLIN);
+  try {
+    ev_loop.add_event(ev.get());
+  } catch (const add_event_fail &e) {
+    std::string msg = e.what();
+    CHECK(msg == "Bad file descriptor");
+  }
 }
 //修改event成功和失败
-TEST_CASE("mod event fail"){
-    event_loop loop(100);
-    auto ev = std::make_shared<event>(0, EPOLLIN);
-    loop.add_event(ev.get());
-    int flag = ev->get_flag();
-    flag |= EPOLLOUT;
-    ev->set_flag(flag);
-    loop.mod_event(ev.get());
+TEST_CASE("mod event fail") {
+  event_loop loop(100);
+  auto ev = std::make_shared<event>(0, EPOLLIN);
+  loop.add_event(ev.get());
+  int flag = ev->get_flag();
+  flag |= EPOLLOUT;
+  ev->set_flag(flag);
+  loop.mod_event(ev.get());
 
-    auto ev2 = std::make_shared<event>(1, EPOLLIN);
-    try{
-        loop.mod_event(ev2.get());
-    }catch(const mod_event_fail& e){
-        std::string msg = e.what();
-        CHECK(msg == "No such file or directory");
-    }
-
+  auto ev2 = std::make_shared<event>(1, EPOLLIN);
+  try {
+    loop.mod_event(ev2.get());
+  } catch (const mod_event_fail &e) {
+    std::string msg = e.what();
+    CHECK(msg == "No such file or directory");
+  }
 }
+void handle_alarm(int sig, siginfo_t *, void *) {
+  CHECK(SIGALRM == sig);
+  return;
+}
+TEST_CASE("wait event error") {
+  event_loop loop(-1);
+  auto ev = std::make_shared<event>(0, EPOLLIN);
+  loop.add_event(ev.get());
+  struct sigaction sigact;
+  sigaction(SIGALRM, nullptr, &sigact);
+  sigact.sa_sigaction = handle_alarm;
+  sigaction(SIGALRM, &sigact, nullptr);
+  ::alarm(1);
+  loop.wait();
+}
+
 // TODO: event_loop 怎么处理已经析构掉的event

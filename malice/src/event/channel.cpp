@@ -1,6 +1,8 @@
 #include "event/channel.hpp"
 #include <cassert>
 #include <iostream>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 using malice::base::buffer;
 using malice::base::errno_str;
@@ -92,8 +94,8 @@ void channel::handle_write(event *e) {
   int flag = e->get_flag();
   assert(flag & write_event);
   int fd = e->get_fd();
-  ssize_t bytes =
-      ::write(fd, write_buf.begin_read(), write_buf.readable_size());
+  ssize_t bytes = ::send(fd, write_buf.begin_read(), write_buf.readable_size(),
+                         MSG_NOSIGNAL | MSG_DONTWAIT);
   if (bytes > 0) {
     write_buf.has_take(bytes);
     return;
