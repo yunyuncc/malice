@@ -18,9 +18,17 @@ channel::channel(int fd, event_loop *loop)
   on_error = [this](int e, const std::string &err_msg) {
     default_on_error(e, err_msg);
   };
+  on_close = [this](channel *chan) { default_on_close(chan); };
+  on_read = [this](::malice::base::buffer &buf) { default_on_read(buf); };
   ev_loop->add_event(ev.get());
 }
-channel::~channel() { ev_loop->del_event(ev.get()); }
+channel::~channel() {
+  ev_loop->del_event(ev.get());
+  assert(read_buf.readable_size() == 0);
+  if (write_buf.readable_size() == 0) {
+    cout << "[warning] some data not send when channel dead" << endl;
+  }
+}
 void channel::enable_read(bool enable) {
   if (enable) {
     int flag = ev->get_flag();
@@ -43,14 +51,12 @@ void channel::enable_write(bool enable) {
     flag &= ~write_event;
   }
 }
-
+//可能是EPOLLIN|EPOLLPRI,可读事件，read 返回0 EOF 调用的handle_close
+// TODO 什么情况下read 不返回0 ,而是 接收到close event EPOLLHUP | EPOLLRDHUP ??
 void channel::handle_close(event *e) {
   assert(e->native_handle() == ev->native_handle());
-  if (on_close) {
-    on_close(this);
-  } else {
-    close(ev->get_fd());
-  }
+  assert(on_close);
+  on_close(this);
 }
 void channel::handle_read(event *e) {
   assert(e->native_handle() == ev->native_handle());
@@ -67,9 +73,8 @@ void channel::handle_read(event *e) {
   ssize_t bytes = read(fd, read_buf.begin_write(), read_buf.writable_size());
   if (bytes > 0) {
     read_buf.has_writen(bytes);
-    if (on_read) {
-      on_read(read_buf);
-    }
+    assert(on_read);
+    on_read(read_buf);
   } else if (bytes == 0) {
     handle_close(e);
   } else {
@@ -84,6 +89,9 @@ void channel::handle_read(event *e) {
 }
 void channel::handle_write(event *e) {
   assert(e->native_handle() == ev->native_handle());
+  int flag = e->get_flag();
+  assert(flag & write_event);
+
   if (write_buf.readable_size() <= 0) {
     enable_write(false);
     if (on_write_finish) {
@@ -91,8 +99,6 @@ void channel::handle_write(event *e) {
     }
     return;
   }
-  int flag = e->get_flag();
-  assert(flag & write_event);
   int fd = e->get_fd();
   ssize_t bytes = ::send(fd, write_buf.begin_read(), write_buf.readable_size(),
                          MSG_NOSIGNAL | MSG_DONTWAIT);
@@ -121,6 +127,14 @@ void channel::handle_error(event *e) {
   on_error(0, err_msg);
 }
 
+void channel::default_on_read(::malice::base::buffer &buf) {
+  assert(&buf == &read_buf);
+  buf.take_all();
+}
+void channel::default_on_close(channel *c) {
+  assert(c == this);
+  close(c->get_fd());
+}
 void channel::default_on_error(int e, const std::string &err_msg) {
   std::string msg = err_msg + "  errno:" + errno_str(e);
   throw default_on_error_called(msg);

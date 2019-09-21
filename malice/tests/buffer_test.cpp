@@ -23,7 +23,16 @@ TEST_CASE("ensure space") {
   buf.ensure_writable(12500);
   CHECK(buf.writable_size() >= 12500);
 }
-
+TEST_CASE("take_all") {
+  buffer buf;
+  std::string msg = "hello";
+  buf.append(msg);
+  CHECK(buf.readable_size() == msg.size());
+  buf.take_all();
+  CHECK(buf.readable_size() == 0);
+  std::string str = buf.take_all_as_string();
+  CHECK(str.empty());
+}
 TEST_CASE("read write") {
   buffer buf;
   std::string hello = "hello";

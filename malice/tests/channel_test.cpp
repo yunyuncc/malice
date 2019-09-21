@@ -2,18 +2,15 @@
 #include "doctest.h"
 #include "event/channel.hpp"
 #include <atomic>
-#include <iostream>
 #include <sys/socket.h>
 #include <sys/types.h>
-using namespace std;
 using namespace malice::event;
+
 TEST_CASE("create  a channel") {
   event_loop loop(-1);
   channel c(0, &loop);
   c.enable_read(true);
   c.enable_read(false);
-  c.enable_write(true);
-  c.enable_write(false);
 }
 
 TEST_CASE("write closed fd") {
@@ -38,6 +35,7 @@ TEST_CASE("write closed fd") {
   });
   local.write("hello");
   loop.wait();
+  close(local_fd);
 }
 TEST_CASE("handle_read") {
   std::atomic<bool> stop_wait{false};
@@ -71,4 +69,45 @@ TEST_CASE("handle_read") {
     loop.wait();
   }
   CHECK(true);
+}
+TEST_CASE("call default_on_close and write_buf full") {
+  event_loop loop(-1);
+  int fds[2] = {0};
+  int ret = socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+  CHECK(ret != -1);
+  int local_fd = fds[0];
+  int peer_fd = fds[1];
+  CHECK(local_fd != 0);
+  CHECK(peer_fd != 0);
+  channel local(local_fd, &loop);
+  channel peer(peer_fd, &loop);
+  local.enable_read(true);
+
+  peer.set_write_finish_handler([](channel *chan) { close(chan->get_fd()); });
+  std::string msg(1024, 'c');
+  int read_count = 0;
+  local.set_read_handler([&msg, &read_count](::malice::base::buffer &buf) {
+    read_count++;
+    if (read_count == 1) {
+      INFO("readable:" << buf.readable_size());
+      CHECK(buf.readable_size() == msg.size());
+    } else if (read_count == 2) {
+      CHECK(buf.readable_size() == msg.size() * 2);
+      buf.take_all();
+    }
+  });
+  peer.write(msg);
+  peer.write(msg);
+  CHECK(!peer.write_buffer_empty());
+  loop.wait();
+  CHECK(peer.write_buffer_empty());
+  CHECK(local.read_buffer_empty());
+  CHECK(read_count == 0);
+  loop.wait();
+  CHECK(read_count == 1);
+  CHECK(!local.read_buffer_empty());
+  loop.wait();
+  CHECK(read_count == 2);
+  // wait to close
+  loop.wait();
 }

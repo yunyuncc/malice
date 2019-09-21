@@ -46,6 +46,8 @@ public:
     read_idx += len;
     reset_if_no_readable();
   }
+  //取走所有可读数据并丢弃
+  void take_all() { has_take(readable_size()); }
   std::string take_all_as_string() { return take_as_string(readable_size()); }
   std::string take_as_string(size_t len) {
     assert(len <= readable_size());
