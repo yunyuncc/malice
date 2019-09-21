@@ -4,10 +4,10 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "base/log.hpp"
+using namespace spdlog;
 using malice::base::buffer;
 using malice::base::errno_str;
-using std::cout;
-using std::endl;
 namespace malice::event {
 channel::channel(int fd, event_loop *loop)
     : ev(std::make_unique<event>(fd, none_event)), ev_loop(loop) {
@@ -26,7 +26,7 @@ channel::~channel() {
   ev_loop->del_event(ev.get());
   assert(read_buf.readable_size() == 0);
   if (write_buf.readable_size() == 0) {
-    cout << "[warning] some data not send when channel dead" << endl;
+    warn("some data not send when channel dead");
   }
 }
 void channel::enable_read(bool enable) {

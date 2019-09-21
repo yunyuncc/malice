@@ -1,12 +1,11 @@
 #include "event/event_loop.hpp"
 #include <cassert>
-#include <iostream>
+#include "base/log.hpp"
 #include <unistd.h>
-using std::cout;
-using std::endl;
+
 namespace malice::event {
 using malice::base::errno_str;
-
+using namespace spdlog;
 static const size_t MAX_ACTIVE_EVENTS = 256;
 event_loop::event_loop(int t_ms)
     : fd(epoll_create1(EPOLL_CLOEXEC)), timeout_ms(t_ms) {
@@ -39,7 +38,7 @@ void event_loop::wait() {
   int ret = epoll_wait(fd, evs, MAX_ACTIVE_EVENTS, timeout_ms);
   if (ret == -1) {
     // TODO log  error
-    cout << "epoll wait error:" << errno_str() << endl;
+    error("epoll wait error:{}", errno_str());
   } else if (ret == 0) {
     if (timeout_handler)
       timeout_handler();
@@ -50,9 +49,9 @@ void event_loop::wait() {
       try {
         ev->fire();
       } catch (const std::exception &e) {
-        cout << "handle event except:" << e.what() << endl;
+        error("process event got exception[{}]", e.what());
       } catch (...) {
-        cout << "handle event unknown except" << endl;
+        error("process event got unknown exception");
       }
     }
   }
