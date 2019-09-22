@@ -28,8 +28,8 @@ public:
   using on_write_finish_t = std::function<void(channel *chan)>;
   channel(int fd, event_loop *loop);
   ~channel();
-  bool buffer_is_empty() const {
-    return (read_buffer_empty() || write_buffer_empty());
+  bool buffer_empty() const {
+    return (read_buffer_empty() && write_buffer_empty());
   }
   bool read_buffer_empty() const { return read_buf.readable_size() == 0; }
   bool write_buffer_empty() const { return write_buf.readable_size() == 0; }
