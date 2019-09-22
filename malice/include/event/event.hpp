@@ -19,6 +19,7 @@ public:
   int get_fd() const { return fd; }
 
 private:
+  void check_repeat_event(int flag);
   const int fd;
   struct epoll_event ev;
   std::map<int, ev_handler_t> handlers;

@@ -1,11 +1,12 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <doctest/doctest.h>
+#include "base/log.hpp"
 #include "event/channel.hpp"
 #include <atomic>
+#include <doctest/doctest.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 using namespace malice::event;
-
+using namespace spdlog;
 TEST_CASE("create  a channel") {
   event_loop loop(-1);
   channel c(0, &loop);
@@ -14,6 +15,7 @@ TEST_CASE("create  a channel") {
 }
 
 TEST_CASE("write closed fd") {
+  spdlog::set_level(spdlog::level::info);
   int fds[2] = {0};
   int ret = socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
   CHECK(ret != -1);
@@ -21,6 +23,7 @@ TEST_CASE("write closed fd") {
   int peer_fd = fds[1];
   CHECK(local_fd != 0);
   CHECK(peer_fd != 0);
+
   event_loop loop(-1);
   channel local(local_fd, &loop);
   channel peer(peer_fd, &loop);
@@ -28,14 +31,6 @@ TEST_CASE("write closed fd") {
   local.write("hello");
   // default on_error
   loop.wait();
-  local.set_error_handler([](int err, const std::string &err_msg) {
-    CHECK(err == EPIPE);
-    CHECK(err_msg == "channel::handle_write");
-    throw std::string("test throw a unknown exception of string type");
-  });
-  local.write("hello");
-  loop.wait();
-  close(local_fd);
 }
 TEST_CASE("handle_read") {
   std::atomic<bool> stop_wait{false};
@@ -54,7 +49,8 @@ TEST_CASE("handle_read") {
     std::string msg = read_buf.take_all_as_string();
     CHECK(msg == send_msg);
   });
-  chan.set_close_handler([&stop_wait](channel *chan) {
+  chan.set_close_handler([&stop_wait](channel *chan, channel::close_type ct) {
+    CHECK(ct == channel::close_type::eof);
     CHECK(chan->buffer_is_empty());
     close(chan->get_fd());
     stop_wait = true;

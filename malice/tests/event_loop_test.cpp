@@ -1,7 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <doctest/doctest.h>
 #include "event/event_loop.hpp"
 #include <chrono>
+#include <doctest/doctest.h>
 #include <future>
 #include <iostream>
 #include <signal.h>
@@ -84,7 +84,7 @@ TEST_CASE("mod event fail") {
     loop.mod_event(ev2.get());
   } catch (const mod_event_fail &e) {
     std::string msg = e.what();
-    CHECK(msg == "No such file or directory");
+    CHECK(msg == "No such file or directory event_loop::mod_event");
   }
 }
 void handle_alarm(int sig, siginfo_t *, void *) {

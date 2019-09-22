@@ -1,6 +1,6 @@
 #include "event/event_loop.hpp"
-#include <cassert>
 #include "base/log.hpp"
+#include <cassert>
 #include <unistd.h>
 
 namespace malice::event {
@@ -24,7 +24,7 @@ void event_loop::mod_event(event *e) {
   assert(e != nullptr);
   int ret = epoll_ctl(fd, EPOLL_CTL_MOD, e->get_fd(), e->native_handle());
   if (ret == -1) {
-    throw mod_event_fail(errno_str());
+    throw mod_event_fail(errno_str() + " event_loop::mod_event");
   }
 }
 

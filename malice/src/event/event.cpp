@@ -12,13 +12,8 @@ event::event(int ev_fd, int flag) : fd(ev_fd) {
   ev.events = flag;
   ev.data.ptr = this;
 }
-
-void event::set_handler(int flag, ev_handler_t func) {
-  // for (auto it = flag_event_map.begin(); it != flag_event_map.end(); ++it) {
-  //  if (it->first & flag) {
-  //    handlers[it->first] = func;
-  //  }
-  //}
+//检查flag中是否有已经挂载过的event,如果有就丢异常，保证一个event不会有多个handler
+void event::check_repeat_event(int flag) {
   int old_flag = 0;
   for (auto it = handlers.begin(); it != handlers.end(); ++it) {
     if (flag & it->first) {
@@ -28,8 +23,12 @@ void event::set_handler(int flag, ev_handler_t func) {
   if (old_flag != 0) {
     throw event_mult_handler(ev_str(old_flag));
   }
+}
+void event::set_handler(int flag, ev_handler_t func) {
+  check_repeat_event(flag);
   handlers[flag] = func;
 }
+//调用当前所发生的所有的event的handler
 void event::fire() {
   for (auto [k, v] : handlers) {
     if (ev.events & k) {

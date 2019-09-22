@@ -20,9 +20,11 @@ namespace malice::event {
 // 猜测会将local的socket读缓冲区和peer的写缓冲区占满，这样peer的可写事件就不会被激活，连接处于挂起状态，直到local继续读数据)
 class channel {
 public:
+  enum class close_type { eof = 0, close_event };
   using on_read_t = std::function<void(::malice::base::buffer &buf)>;
-  using on_close_t = std::function<void(channel *chan)>;
-  using on_error_t = std::function<void(int, const std::string &msg)>;
+  using on_close_t = std::function<void(channel *chan, close_type ct)>;
+  using on_error_t =
+      std::function<void(int, const std::string &msg, channel *chan)>;
   using on_write_finish_t = std::function<void(channel *chan)>;
   channel(int fd, event_loop *loop);
   ~channel();
@@ -41,7 +43,7 @@ public:
   }
   void set_read_handler(on_read_t func) { on_read = func; }
   // 1:close when got a EOF
-  // 2:close when got a close event(TODO)
+  // 2:close when got a close event
   void set_close_handler(on_close_t func) { on_close = func; }
   // 1:error when read (TODO)
   // 2:error when write(write on close fd)
@@ -61,7 +63,7 @@ private:
   void handle_write(event *e);
   void handle_error(event *e);
   void default_on_error(int e, const std::string &err_msg);
-  void default_on_close(channel *c);
+  void default_on_close(channel *c, close_type ct);
   void default_on_read(::malice::base::buffer &buf);
   //重新注册event到event_loop中去
   void update_event() { ev_loop->mod_event(ev.get()); }
