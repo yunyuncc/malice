@@ -5,11 +5,51 @@
 #include <future>
 #include <iostream>
 #include <signal.h>
+#include <sys/eventfd.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 using namespace std;
 using namespace malice::event;
+TEST_CASE("test event loop got unknown exception by eventfd") {
+  unsigned int init_val = 1;
+  int fd = eventfd(init_val, EFD_CLOEXEC | EFD_NONBLOCK);
+  CHECK(fd != -1);
+  event_loop loop(-1);
+  auto ev = std::make_shared<event>(fd, EPOLLIN);
+  std::atomic<int64_t> got_val = 0;
+  ev->set_handler(EPOLLIN, [&fd, &got_val](event *e) {
+    CHECK(e->get_fd() == fd);
+    int64_t val = 0;
+    ssize_t num = read(fd, &val, sizeof(val));
+    CHECK(num == sizeof(val));
+    got_val = val;
+    throw 1;
+  });
+  loop.add_event(ev.get());
+  loop.wait();
+  CHECK(got_val == init_val);
+}
+
+TEST_CASE("test event loop got exception by eventfd") {
+  unsigned int init_val = 1;
+  int fd = eventfd(init_val, EFD_CLOEXEC | EFD_NONBLOCK);
+  CHECK(fd != -1);
+  event_loop loop(-1);
+  auto ev = std::make_shared<event>(fd, EPOLLIN);
+  std::atomic<int64_t> got_val = 0;
+  ev->set_handler(EPOLLIN, [&fd, &got_val](event *e) {
+    CHECK(e->get_fd() == fd);
+    int64_t val = 0;
+    ssize_t num = read(fd, &val, sizeof(val));
+    CHECK(num == sizeof(val));
+    got_val = val;
+    throw std::runtime_error("exception for test");
+  });
+  loop.add_event(ev.get());
+  loop.wait();
+  CHECK(got_val == init_val);
+}
 
 TEST_CASE("timeout event_loop") {
   event_loop ev_loop(100);

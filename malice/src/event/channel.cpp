@@ -79,6 +79,8 @@ void channel::handle_read(event *e) {
   } else {
     int e = errno;
     if (e == EAGAIN || e == EWOULDBLOCK) {
+      //只要保证fd只在这个事件循环里面读，理论上不会出现这个错误
+      //想要重现这个错误，只能在读事件激活后，别的线程提前把socket接收缓冲区里的数据先读走了
       return;
     } else {
       assert(on_error);
@@ -100,6 +102,7 @@ void channel::handle_write(event *e) {
   } else {
     int e = errno;
     if (e == EAGAIN || e == EWOULDBLOCK) {
+      //和可读事件一样，理论上不会走到这个分支，除非触发可写事件后，别的线程先把这个socket的发送缓冲区先写满了
       return;
     }
     assert(on_error);
