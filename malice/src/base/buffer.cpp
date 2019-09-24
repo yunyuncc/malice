@@ -9,7 +9,7 @@ const size_t buffer::init_size;
 buffer::buffer(size_t size) : buf(size + prepend_size) {
   reset();
   assert(readable_size() == 0);
-  assert(writable_size() == init_size);
+  assert(writable_size() != 0);
 }
 
 void buffer::ensure_writable(size_t len) {

@@ -20,13 +20,20 @@ namespace malice::event {
 // 猜测会将local的socket读缓冲区和peer的写缓冲区占满，这样peer的可写事件就不会被激活，连接处于挂起状态，直到local继续读数据)
 class channel {
 public:
+  // close type :
+  //对端close的EPOLLIN(read 0),EPOLLRDHUP
+  // EPOLLHUP
+  //这两种事件的处理可能不一样，
+  // socketpair无法复现EPOLLRDHUP,应该是只有socket close才会有？TODO
   enum class close_type { eof = 0, close_event };
   using on_read_t = std::function<void(::malice::base::buffer &buf)>;
   using on_close_t = std::function<void(channel *chan, close_type ct)>;
   using on_error_t =
       std::function<void(int, const std::string &msg, channel *chan)>;
   using on_write_finish_t = std::function<void(channel *chan)>;
-  channel(int fd, event_loop *loop);
+
+  channel(int fd, event_loop *loop,
+          size_t init_buf_size = ::malice::base::buffer::init_size);
   ~channel();
   bool buffer_empty() const {
     return (read_buffer_empty() && write_buffer_empty());
@@ -35,9 +42,11 @@ public:
   bool write_buffer_empty() const { return write_buf.readable_size() == 0; }
   void enable_read(bool enable);
   int get_fd() const { return ev->get_fd(); }
-  void write(const std::string &buf) { write(buf.data(), buf.size()); }
+  void write(const std::string &buf) {
+    write(static_cast<const void *>(buf.data()), buf.size());
+  }
   // TODO 需要线程安全
-  void write(const char *data, size_t len) {
+  void write(const void *data, size_t len) {
     write_buf.append(data, len);
     enable_write(true);
   }

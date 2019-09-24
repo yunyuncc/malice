@@ -2,6 +2,7 @@
 #include "base/log.hpp"
 #include <cassert>
 #include <iostream>
+#include <signal.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -9,8 +10,9 @@ using namespace spdlog;
 using malice::base::buffer;
 using malice::base::errno_str;
 namespace malice::event {
-channel::channel(int fd, event_loop *loop)
-    : ev(std::make_unique<event>(fd, none_event)), ev_loop(loop) {
+channel::channel(int fd, event_loop *loop, size_t init_buf_size)
+    : ev(std::make_unique<event>(fd, none_event)), ev_loop(loop),
+      read_buf(init_buf_size), write_buf(init_buf_size) {
   ev->set_handler(read_event, [this](event *e) { handle_read(e); });
   ev->set_handler(write_event, [this](event *e) { handle_write(e); });
   ev->set_handler(error_event, [this](event *e) { handle_error(e); });
@@ -54,7 +56,7 @@ void channel::enable_write(bool enable) {
   }
 }
 //发生close event的时候回调
-// TODO 什么情况下可以接收到close event EPOLLHUP | EPOLLRDHUP ??
+// TODO 什么情况下可以接收到close event EPOLLHUP ??
 void channel::handle_close(event *e) {
   assert(e->native_handle() == ev->native_handle());
   assert(on_close);
@@ -95,8 +97,7 @@ void channel::handle_write(event *e) {
   assert(e->native_handle() == ev->native_handle());
   int fd = e->get_fd();
   ssize_t bytes =
-      ::send(fd,
-             write_buf.begin_read(), write_buf.readable_size(), MSG_NOSIGNAL /* TODO fd本身就是noblock的时候加这个flag会不会损耗性能? | MSG_DONTWAIT*/);
+      ::write(fd, write_buf.begin_read(), write_buf.readable_size());
   if (bytes >= 0) {
     write_buf.has_take(bytes);
   } else {
@@ -150,12 +151,19 @@ void channel::default_on_error(int e, const std::string &err_msg) {
 }
 //可读事件，读到0表明peer要么调用了close
 //要么调用了shutdown发来的FIN,此时程序是被动关闭，可以直接close，也可以写点数据再close
-const int channel::read_event = EPOLLIN | EPOLLPRI;
+const int channel::read_event = EPOLLIN | EPOLLPRI | EPOLLRDHUP;
 const int channel::write_event = EPOLLOUT;
 // TODO 这个事件什么时候会出现？
 const int channel::error_event = EPOLLERR;
-// TODO 验证一下这两个事件到底什么情况下会复现
-const int channel::close_event = EPOLLHUP | EPOLLRDHUP;
+// TODO 验证一下这个事件到底什么情况下会复现
+const int channel::close_event = EPOLLHUP;
 const int channel::none_event = 0;
+
+class ignore_sig_pipe {
+public:
+  ignore_sig_pipe() { ::signal(SIGPIPE, SIG_IGN); }
+};
+
+static ignore_sig_pipe ign_pipe_obj;
 
 } // namespace malice::event

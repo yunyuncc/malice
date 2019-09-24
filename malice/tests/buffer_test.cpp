@@ -23,6 +23,19 @@ TEST_CASE("ensure space") {
   buf.ensure_writable(12500);
   CHECK(buf.writable_size() >= 12500);
 }
+void test_uint64(uint64_t val) {
+  buffer buf;
+  buf.take_all();
+  buf.append(val);
+  uint64_t got_val = buf.take_as_uint64();
+  CHECK(got_val == val);
+}
+TEST_CASE("test uint64") {
+  test_uint64(0);
+  test_uint64(1);
+  test_uint64(233);
+  test_uint64(UINT64_MAX);
+}
 TEST_CASE("take_all") {
   buffer buf;
   std::string msg = "hello";
