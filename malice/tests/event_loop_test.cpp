@@ -11,6 +11,14 @@
 #include <unistd.h>
 using namespace std;
 using namespace malice::event;
+
+TEST_CASE("test in_loop_thread") {
+  event_loop loop(-1);
+  CHECK(loop.in_loop_thread());
+  auto f = std::async([&loop] { CHECK(!loop.in_loop_thread()); });
+  f.wait();
+}
+
 TEST_CASE("test event loop got unknown exception by eventfd") {
   unsigned int init_val = 1;
   int fd = eventfd(init_val, EFD_CLOEXEC | EFD_NONBLOCK);

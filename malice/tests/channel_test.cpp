@@ -3,6 +3,7 @@
 #include "event/channel.hpp"
 #include <atomic>
 #include <doctest/doctest.h>
+#include <future>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <utility>

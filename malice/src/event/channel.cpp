@@ -13,6 +13,7 @@ namespace malice::event {
 channel::channel(int fd, event_loop *loop, size_t init_buf_size)
     : ev(std::make_unique<event>(fd, none_event)), ev_loop(loop),
       read_buf(init_buf_size), write_buf(init_buf_size) {
+  loop->assert_in_loop_thread();
   ev->set_handler(read_event, [this](event *e) { handle_read(e); });
   ev->set_handler(write_event, [this](event *e) { handle_write(e); });
   ev->set_handler(error_event, [this](event *e) { handle_error(e); });
@@ -27,6 +28,7 @@ channel::channel(int fd, event_loop *loop, size_t init_buf_size)
   ev_loop->add_event(ev.get());
 }
 channel::~channel() {
+  ev_loop->assert_in_loop_thread();
   ev_loop->del_event(ev.get());
   assert(read_buf.readable_size() == 0);
   if (write_buf.readable_size() != 0) {
@@ -139,7 +141,7 @@ void channel::default_on_read(::malice::base::buffer &buf) {
 //行为是将本channel的fd close掉,暂时不关心close_type
 void channel::default_on_close(channel *c, close_type) {
   assert(c == this);
-  close(c->get_fd());
+  ::close(c->get_fd());
 }
 //默认的错误处理函数
 //行为是将fd close掉，并打印错误日志

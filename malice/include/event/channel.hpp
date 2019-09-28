@@ -14,8 +14,8 @@ namespace malice::event {
 // 6.在读写fd,或者epoll_wait激活的事件中发生EPOLLERR的时候on_error会被调用，如果不挂载on_error的话，默认的on_error就会丢异常出来，event_loop循环就会捕捉到该异常，并打印日志
 // 8.构造channel的时候就会将fd,注册到event_loop中去，并关注该fd的事件
 // 9.析构channel的时候会将fd从event_loop中移除
-// 10.怎么避免channel析构的时候read_buf,write_buf中没有剩余的未消费的数据？TODO
-// add a warning log 11.可以使能或关闭channel的读事件(TODO
+// 10.怎么避免channel析构的时候read_buf,write_buf中没有剩余的未消费的数据？add a
+// warning log 11.可以使能或关闭channel的读事件(TODO
 // 如果local关闭读事件，peer又一直在写数据，会怎么样?
 // 猜测会将local的socket读缓冲区和peer的写缓冲区占满，这样peer的可写事件就不会被激活，连接处于挂起状态，直到local继续读数据)
 class channel {
@@ -40,12 +40,13 @@ public:
   }
   bool read_buffer_empty() const { return read_buf.readable_size() == 0; }
   bool write_buffer_empty() const { return write_buf.readable_size() == 0; }
-  void enable_read(bool enable);
+
+  void enable_read(bool enable); //必须在loop线程调用
   int get_fd() const { return ev->get_fd(); }
   void write(const std::string &buf) {
     write(static_cast<const void *>(buf.data()), buf.size());
   }
-  // TODO 需要线程安全
+  // 必须在loop线程调用
   void write(const void *data, size_t len) {
     write_buf.append(data, len);
     enable_write(true);

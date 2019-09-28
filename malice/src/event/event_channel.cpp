@@ -12,9 +12,7 @@ event_channel::event_channel(event_loop *ev_loop, on_event_t ev_handler)
       [this](::malice::base::buffer &buf) { handle_read(buf); });
   chan->enable_read(true);
 }
-event_channel::~event_channel(){
-    close(fd);
-}
+event_channel::~event_channel() { close(fd); }
 void event_channel::notify(uint64_t val) {
   int evfd = chan->get_fd();
   ssize_t n = ::write(evfd, &val, sizeof(val));

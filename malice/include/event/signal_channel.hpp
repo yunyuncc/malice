@@ -8,9 +8,9 @@
 #include <sys/signalfd.h>
 namespace malice::event {
 
-//signal_channel 创建一个signalfd,并注册到event_loop中
+// signal_channel 创建一个signalfd,并注册到event_loop中
 //一个进程只能有一个signal_channel
-//signal_channel会拦截除SIGKILL SIGSTOP外的所有信号
+// signal_channel会拦截除SIGKILL SIGSTOP外的所有信号
 //需要为每个signal注册一个handler,这样当信号发生的时候handler就会在event_loop所在的线程被回调
 //如果signal_channel接受到了一个signal但是没有注册响应的handler，就会打印一条warn日志，然后将该信号忽略
 //如果调用ignore忽略某个信号，那么当信号发生的时候就会直接忽略该信号，并且打印一条debug日志

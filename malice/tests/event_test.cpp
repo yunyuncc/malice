@@ -1,6 +1,6 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <doctest/doctest.h>
 #include "event/event.hpp"
+#include <doctest/doctest.h>
 using namespace malice::event;
 TEST_CASE("ev_str") {
   CHECK(ev_str(EPOLLIN) == "EPOLLIN");
