@@ -1,5 +1,5 @@
 #pragma once
-#include "base/buffer.hpp"
+//#include "base/buffer.hpp"
 #include "base/tool.hpp"
 #include "event/channel.hpp"
 #include "event/event_loop.hpp"
@@ -19,6 +19,5 @@ private:
   on_event_t on_event;
   std::unique_ptr<channel> chan;
 };
-CREATE_NEW_EXCEPTION(create_event_channel_fail);
 
 } // namespace malice::event
