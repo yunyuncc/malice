@@ -43,7 +43,7 @@ TEST_CASE("ignore a signal") {
   std::async([] { kill(getpid(), SIGUSR1); });
   loop.wait();
 }
-TEST_CASE("handle SIGTERM and SIGQUIT") {
+TEST_CASE("handle SIGTERM and SIGQUIT and SIGPIPE") {
   event_loop loop(-1);
   signal_channel chan(&loop);
   chan.set_signal_handler(SIGTERM, [](const signalfd_siginfo &siginfo) {
@@ -52,9 +52,13 @@ TEST_CASE("handle SIGTERM and SIGQUIT") {
   chan.set_signal_handler(SIGQUIT, [](const signalfd_siginfo &siginfo) {
     CHECK(siginfo.ssi_signo == SIGQUIT);
   });
+  chan.set_signal_handler(SIGPIPE, [](const signalfd_siginfo &siginfo) {
+    CHECK(siginfo.ssi_signo == SIGPIPE);
+  });
   std::async([] {
     kill(getpid(), SIGTERM);
     kill(getpid(), SIGQUIT);
+    kill(getpid(), SIGPIPE);
   });
   loop.wait();
 }
