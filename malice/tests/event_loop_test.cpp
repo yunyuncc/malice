@@ -151,4 +151,35 @@ TEST_CASE("wait event error") {
   loop.wait();
 }
 
+using namespace std::chrono_literals;
+TEST_CASE("test stop in other thread") {
+  event_loop loop(-1);
+  std::async([&loop] { loop.stop(); });
+  loop.loop();
+}
+
+TEST_CASE("test stop in loop") {
+  event_loop loop(-1);
+  std::async([&loop] {
+    loop.run_in_loop([&loop] {
+      CHECK(loop.in_loop_thread());
+      loop.stop();
+    });
+  });
+  loop.loop();
+}
+TEST_CASE("test run in loop") {
+  event_loop loop(-1);
+  int c = 0;
+  loop.run_in_loop([&c] { c++; });
+  std::async([&c, &loop] {
+    loop.run_in_loop([&c, &loop] {
+      c++;
+      loop.stop();
+      CHECK(loop.in_loop_thread());
+    });
+  });
+  loop.loop();
+  CHECK(c == 2);
+}
 // TODO: event_loop 怎么处理已经析构掉的event
