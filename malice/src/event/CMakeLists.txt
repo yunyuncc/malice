@@ -4,6 +4,7 @@ set(EVENT_SRC
         channel.cpp
         event_channel.cpp
         signal_channel.cpp
+        event_loop_thread.cpp
     )
 add_library(malice_event SHARED ${EVENT_SRC})
 target_include_directories(malice_event PUBLIC ${CMAKE_SOURCE_DIR}/malice/include)
