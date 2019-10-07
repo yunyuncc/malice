@@ -1,7 +1,7 @@
 #include_directories(${CMAKE_SOURCE_DIR}/extern/header_only)
 include_directories(${CMAKE_SOURCE_DIR}/malice/include)
 
-set(test_libs malice_event malice_base pthread gcov)
+set(test_libs malice_event malice_base malice_net pthread gcov)
 
 function(add_my_test test_name)
     add_executable(${test_name} ${test_name}.cpp)
@@ -20,3 +20,4 @@ add_my_test(event_channel_test)
 add_my_test(signal_channel_test)
 add_my_test(event_loop_thread_test)
 add_my_test(timer_test)
+add_my_test(address_test)
