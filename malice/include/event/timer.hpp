@@ -33,7 +33,7 @@ public:
 
     assert(0 == timerfd_settime(fd, 0, &t, nullptr));
 
-    chan = std::make_unique<channel>(fd, loop);
+    chan = std::make_unique<channel>(fd, loop, sizeof(uint64_t));
     chan->set_read_handler(
         [this](::malice::base::buffer &buf) { handle_read(buf); });
     chan->enable_read(true);
