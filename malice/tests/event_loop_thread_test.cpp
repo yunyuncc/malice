@@ -9,7 +9,10 @@ using namespace malice::event;
 
 TEST_CASE("test event_loop_thread run") {
   auto main_id = std::this_thread::get_id();
-  event_loop_thread ev_thread;
+  int before_c = 0;
+  int after_c = 0;
+  event_loop_thread ev_thread(std::string("test"), [&before_c] { before_c++; },
+                              [&after_c] { after_c++; });
   ev_thread.start();
   std::promise<int> c_promise;
   std::future<int> c_future = c_promise.get_future();
@@ -20,4 +23,7 @@ TEST_CASE("test event_loop_thread run") {
   });
   CHECK(c_future.get() == 233);
   ev_thread.stop();
+  ev_thread.stop(); // test stop twice
+  CHECK(before_c == 1);
+  CHECK(after_c == 1);
 }
