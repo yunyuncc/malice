@@ -13,17 +13,18 @@ __thread event_loop *loop_of_this_thread =
 
 static const size_t MAX_ACTIVE_EVENTS = 256;
 event_loop::event_loop(int t_ms)
-    : fd(epoll_create1(EPOLL_CLOEXEC)), timeout_ms(t_ms), should_stop(false) {
+    : fd(epoll_create1(EPOLL_CLOEXEC)), timeout_ms(t_ms), should_stop(false),
+      thread_id(std::this_thread::get_id()) {
   assert(fd != -1);
   assert(loop_of_this_thread == nullptr);
-  thread_id = std::this_thread::get_id();
 
   loop_of_this_thread = this;
 
   //这个函数会将this指针暴漏给event_channel
   // event_channel会调用event_loop的成员函数
   //就会出现调用event_loop成员函数(add_event,
-  //mod_event)的时候event_loop还没完全构造完成 这样的模式应该是有安全隐患, FIXME
+  // mod_event)的时候event_loop还没完全构造完成 这样的模式应该是有安全隐患,
+  // FIXME
   setup_wakeup_channel();
 }
 

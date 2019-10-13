@@ -28,7 +28,10 @@ public:
     timeout_handler = func;
   }
   void wait();
-  bool in_loop_thread() { return thread_id == std::this_thread::get_id(); }
+  bool in_loop_thread() {
+    auto cur_id = std::this_thread::get_id();
+    return thread_id == cur_id;
+  }
   void assert_in_loop_thread() { assert(in_loop_thread()); }
   void loop();
 
@@ -43,8 +46,9 @@ private:
   const int fd;
   const int timeout_ms;
   std::atomic<bool> should_stop;
+  const std::thread::id thread_id;
+
   timeout_handler_t timeout_handler;
-  std::thread::id thread_id;
   std::vector<work_t> work_queue;
   std::mutex m;
   std::unique_ptr<event_channel> wakeup_channel;

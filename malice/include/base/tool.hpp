@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <string.h>
 #include <string>
+#include <sys/types.h>
+
 #ifndef CREATE_NEW_EXCEPTION
 #define CREATE_NEW_EXCEPTION(name)                                             \
   class name : public std::runtime_error {                                     \
@@ -19,5 +21,7 @@ inline std::string errno_str(int e) {
 }
 
 inline std::string errno_str() { return errno_str(errno); }
+
+pid_t gettid();
 
 } // namespace malice::base
