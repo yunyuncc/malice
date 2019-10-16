@@ -1,25 +1,46 @@
 #pragma once
 #include "base/tool.hpp"
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
 
+#include <cassert>
 namespace malice::net {
+
+std::string ai_family_str(int family);
+std::string ai_socktype_str(int socktype);
+std::string ai_protocol_str(int protocol);
+std::string ai_flags_str(int flag);
+std::string sockaddr_str(const struct sockaddr *addr);
+
 class address {
 public:
-  address(const std::string &host, const std::string &port);
-  ~address();
-  std::string str() const {
-    std::string res = "[\n";
-    res += "flag:";
-    res += std::to_string(addr->ai_flags);
-    res += "\n";
-    return res;
+  address(const std::string &ip, uint16_t port); // suport ipv4 for now
+
+  struct sockaddr *get_sockaddr() {
+    return (struct sockaddr *)&net_addr;
   }
 
 private:
+  std::string ip;
+  uint16_t port;
+  struct sockaddr_storage net_addr;
+  // typedef uint32_t in_addr_t;
+  // struct in_addr
+  //{
+  //  in_addr_t s_addr;
+  //};
+
+  // struct sockaddr_in {
+  //  sa_family_t sin_family;
+  //  in_port_t sin_port;
+  //  struct in_addr sin_addr;
+  //  //pad
+  //};
+
   // struct addrinfo {
   //    int              ai_flags;
   //    int              ai_family;
@@ -30,13 +51,7 @@ private:
   //    char            *ai_canonname;
   //    struct addrinfo *ai_next;
   //};
-  struct addrinfo *addr = nullptr;
+  // std::string host_str;
 };
-std::string ai_family_str(int family);
-std::string ai_socktype_str(int socktype);
-std::string ai_protocol_str(int protocol);
-std::string ai_flags_str(int flag);
-std::string sockaddr_str(struct sockaddr *addr); // TODO
 
-CREATE_NEW_EXCEPTION(getaddrinfo_fail);
 } // namespace malice::net

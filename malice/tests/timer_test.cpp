@@ -1,6 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "base/log.hpp"
 #include "event/timer.hpp"
+#include <cmath>
 #include <doctest/doctest.h>
 using namespace spdlog;
 using namespace malice::event;
@@ -18,8 +19,9 @@ TEST_CASE("test once timer") {
   auto t1 = steady_clock::now();
   loop.loop();
   auto t2 = steady_clock::now();
-  auto pass_ms = duration_cast<milliseconds>(t2 - t1).count();
-  CHECK(pass_ms == 10);
+  auto pass_us = duration_cast<microseconds>(t2 - t1).count();
+  auto sub = abs(1.0 - pass_us / (10 * 1000));
+  CHECK(sub < 0.01);
 }
 
 TEST_CASE("test period timer") {
@@ -40,8 +42,9 @@ TEST_CASE("test period timer") {
   loop.loop();
   auto t2 = steady_clock::now();
   CHECK(c == 10);
-  auto pass_ms = duration_cast<milliseconds>(t2 - t1).count();
-  CHECK(pass_ms == 10 /*ms*/ * 10 /*tick 10 times*/);
+  auto pass_us = duration_cast<microseconds>(t2 - t1).count();
+  auto sub = abs(1.0 - pass_us / (10 * 10 * 1000));
+  CHECK(sub < 0.01);
 }
 TEST_CASE("test two timer") {
   event_loop loop(-1);
@@ -63,8 +66,9 @@ TEST_CASE("test two timer") {
   auto t1 = steady_clock::now();
   loop.loop();
   auto t2 = steady_clock::now();
-  auto pass_ms = duration_cast<milliseconds>(t2 - t1).count();
-  CHECK(pass_ms == 200);
+  auto pass_us = duration_cast<microseconds>(t2 - t1).count();
+  auto sub = abs(1.0 - pass_us / (200 * 1000));
+  CHECK(sub < 0.01);
   CHECK(c1 == 1);
   CHECK(c2 == 1);
 }

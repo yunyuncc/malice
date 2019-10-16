@@ -1,6 +1,9 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "base/log.hpp"
 #include "net/address.hpp"
+#include <algorithm>
 #include <doctest/doctest.h>
+using namespace spdlog;
 using namespace malice::net;
 TEST_CASE("test ai_family_str") {
   CHECK(ai_family_str(AF_INET) == "AF_INET");
@@ -28,4 +31,18 @@ TEST_CASE("test ai_flags_str") {
         "AI_CANONNAME|AI_NUMERICHOST|");
 }
 
-TEST_CASE("test address") { address addr("127.0.0.1", "10005"); }
+TEST_CASE("test address ipv4") {
+  address addr("127.0.0.1", 10005);
+  CHECK(sockaddr_str(addr.get_sockaddr()) == "127.0.0.1 10005");
+}
+TEST_CASE("test address ipv6") {
+  std::string addr_str = "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789";
+  address addr(addr_str, 80);
+  std::transform(addr_str.begin(), addr_str.end(), addr_str.begin(), tolower);
+  CHECK(sockaddr_str(addr.get_sockaddr()) == (addr_str + " 80"));
+}
+TEST_CASE("test sockaddr_str unspec") {
+  struct sockaddr addr;
+  addr.sa_family = AF_UNSPEC;
+  CHECK(sockaddr_str(&addr) == "AF_UNSPEC");
+}
