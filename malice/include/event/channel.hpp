@@ -6,7 +6,7 @@
 #include <functional>
 #include <memory>
 namespace malice::event {
-// 1.channel 只封装了 fd的基于事件的读写操作，并不负责打开和关闭fd
+// 1.channel 拥有fd和event
 // 2.enable_read(true)并且挂载on_read的时候channel就会自动从接受缓存区读数据到read_buf然后回调on_read
 // 3.enable_read(true)并且不挂载on_read，就会将接收缓冲区中的数据读出来丢掉(default_on_read)
 // 5. a:实现on_close应该负责关闭fd,否则fd会泄露
@@ -18,11 +18,20 @@ namespace malice::event {
 // warning log 11.可以使能或关闭channel的读事件(TODO
 // 如果local关闭读事件，peer又一直在写数据，会怎么样?
 // 猜测会将local的socket读缓冲区和peer的写缓冲区占满，这样peer的可写事件就不会被激活，连接处于挂起状态，直到local继续读数据)
+
 class channel {
 public:
+  enum class fd_stat_t {
+    open,           //可读可写
+    shutdown_read,  //可写
+    shutdown_write, //可读
+    shutdown_rw,    //不可读写，等待关闭
+    closed          //已关闭
+  };
+
   // close type :
-  //对端close的EPOLLIN(read 0),EPOLLRDHUP
-  // EPOLLHUP
+  // 1.对端close的EPOLLIN(read 0),EPOLLRDHUP
+  // 2.EPOLLHUP
   //这两种事件的处理可能不一样，
   // socketpair无法复现EPOLLRDHUP,应该是只有socket close才会有？TODO
   enum class close_type { eof = 0, close_event };
@@ -38,6 +47,11 @@ public:
   bool buffer_empty() const {
     return (read_buffer_empty() && write_buffer_empty());
   }
+  void shutdown_read();  //关闭读
+  void shutdown_write(); //关闭写
+  void shutdown_rw();    //关闭读写
+  void force_close();    //强制关闭
+  fd_stat_t get_fd_stat() const { return fd_stat; }
   bool read_buffer_empty() const { return read_buf.readable_size() == 0; }
   bool write_buffer_empty() const { return write_buf.readable_size() == 0; }
 
@@ -84,6 +98,7 @@ private:
   static const int none_event;
   std::unique_ptr<event> ev;
   event_loop *ev_loop;
+  fd_stat_t fd_stat;
   ::malice::base::buffer read_buf;
   ::malice::base::buffer write_buf;
   on_read_t on_read;
@@ -92,5 +107,6 @@ private:
   on_write_finish_t on_write_finish;
 };
 
+bool fd_is_valid(int fd);
 CREATE_NEW_EXCEPTION(default_on_error_called);
 } // namespace malice::event

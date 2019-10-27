@@ -1,19 +1,29 @@
 #include "event/channel.hpp"
 #include "base/log.hpp"
 #include <cassert>
+#include <fcntl.h>
 #include <iostream>
 #include <signal.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 using namespace spdlog;
 using malice::base::buffer;
 using malice::base::errno_str;
 namespace malice::event {
+
+bool fd_is_valid(int fd) {
+  int ret = fcntl(fd, F_GETFD);
+  return (ret == -1) ? false : true;
+}
+
 channel::channel(int fd, event_loop *loop, size_t init_buf_size)
     : ev(std::make_unique<event>(fd, none_event)), ev_loop(loop),
-      read_buf(init_buf_size), write_buf(init_buf_size) {
+      fd_stat(fd_stat_t::open), read_buf(init_buf_size),
+      write_buf(init_buf_size) {
   loop->assert_in_loop_thread();
+  assert(fd_is_valid);
   ev->set_handler(read_event, [this](event *e) { handle_read(e); });
   ev->set_handler(write_event, [this](event *e) { handle_write(e); });
   ev->set_handler(error_event, [this](event *e) { handle_error(e); });
@@ -34,6 +44,7 @@ channel::~channel() {
   if (write_buf.readable_size() != 0) {
     warn("some data not send when channel dead");
   }
+  force_close();
 }
 void channel::enable_read(bool enable) {
   if (enable) {
@@ -57,6 +68,7 @@ void channel::enable_write(bool enable) {
     flag &= ~write_event;
   }
 }
+
 //发生close event的时候回调
 // TODO 什么情况下可以接收到close event EPOLLHUP ??
 void channel::handle_close(event *e) {
@@ -137,18 +149,63 @@ void channel::default_on_read(::malice::base::buffer &buf) {
   assert(&buf == &read_buf);
   buf.take_all();
 }
+//如果fd已经close过不会重新close
+//如果fd还没有close过，会强制close
+void channel::force_close() {
+  if (fd_stat == fd_stat_t::closed) {
+    return;
+  } else {
+    ::close(ev->get_fd());
+    fd_stat = fd_stat_t::closed;
+  }
+}
+
+void channel::shutdown_read() {
+  ev_loop->assert_in_loop_thread();
+  if (fd_stat == fd_stat_t::closed || fd_stat == fd_stat_t::shutdown_read ||
+      fd_stat == fd_stat_t::shutdown_rw) {
+    return;
+  }
+  assert(::shutdown(ev->get_fd(), SHUT_RD) == 0);
+  if (fd_stat == fd_stat_t::shutdown_write) {
+    fd_stat = fd_stat_t::shutdown_rw;
+  } else {
+    fd_stat = fd_stat_t::shutdown_read;
+  }
+}
+void channel::shutdown_write() {
+  ev_loop->assert_in_loop_thread();
+  if (fd_stat == fd_stat_t::closed || fd_stat == fd_stat_t::shutdown_write ||
+      fd_stat == fd_stat_t::shutdown_rw) {
+    return;
+  }
+  assert(::shutdown(ev->get_fd(), SHUT_WR) == 0);
+  if (fd_stat == fd_stat_t::shutdown_read) {
+    fd_stat = fd_stat_t::shutdown_rw;
+  } else {
+    fd_stat = fd_stat_t::shutdown_write;
+  }
+}
+void channel::shutdown_rw() {
+  ev_loop->assert_in_loop_thread();
+  if (fd_stat == fd_stat_t::closed) {
+    return;
+  }
+  assert(::shutdown(ev->get_fd(), SHUT_RDWR) == 0);
+  fd_stat = fd_stat_t::shutdown_rw;
+}
 //默认的连接关闭处理函数
-//行为是将本channel的fd close掉,暂时不关心close_type
+//行为是将本channel的fd 强制close掉,暂时不关心close_type
 void channel::default_on_close(channel *c, close_type) {
   assert(c == this);
-  ::close(c->get_fd());
+  force_close();
 }
 //默认的错误处理函数
 //行为是将fd close掉，并打印错误日志
 void channel::default_on_error(int e, const std::string &err_msg) {
   std::string msg = err_msg + "  errno:" + errno_str(e);
-  int ret = close(get_fd());
-  error("default_on_error:{} {} close ret:{}", e, msg, ret);
+  force_close();
+  error("default_on_error:{} {} close ret:{}", e, msg);
   // throw default_on_error_called(msg);
 }
 //可读事件，读到0表明peer要么调用了close
