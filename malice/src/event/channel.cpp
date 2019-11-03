@@ -18,10 +18,9 @@ bool fd_is_valid(int fd) {
   return (ret == -1) ? false : true;
 }
 
-channel::channel(int fd, event_loop *loop, size_t init_buf_size)
+channel::channel(int fd, std::shared_ptr<event_loop> loop, size_t init_buf_size)
     : ev(std::make_unique<event>(fd, none_event)), ev_loop(loop),
-      fd_stat(fd_stat_t::open), read_buf(init_buf_size),
-      write_buf(init_buf_size) {
+      fd_stat(stat_t::open), read_buf(init_buf_size), write_buf(init_buf_size) {
   loop->assert_in_loop_thread();
   assert(fd_is_valid);
   ev->set_handler(read_event, [this](event *e) { handle_read(e); });
@@ -152,47 +151,47 @@ void channel::default_on_read(::malice::base::buffer &buf) {
 //如果fd已经close过不会重新close
 //如果fd还没有close过，会强制close
 void channel::force_close() {
-  if (fd_stat == fd_stat_t::closed) {
+  if (fd_stat == stat_t::closed) {
     return;
   } else {
     ::close(ev->get_fd());
-    fd_stat = fd_stat_t::closed;
+    fd_stat = stat_t::closed;
   }
 }
 
 void channel::shutdown_read() {
   ev_loop->assert_in_loop_thread();
-  if (fd_stat == fd_stat_t::closed || fd_stat == fd_stat_t::shutdown_read ||
-      fd_stat == fd_stat_t::shutdown_rw) {
+  if (fd_stat == stat_t::closed || fd_stat == stat_t::shutdown_read ||
+      fd_stat == stat_t::shutdown_rw) {
     return;
   }
   assert(::shutdown(ev->get_fd(), SHUT_RD) == 0);
-  if (fd_stat == fd_stat_t::shutdown_write) {
-    fd_stat = fd_stat_t::shutdown_rw;
+  if (fd_stat == stat_t::shutdown_write) {
+    fd_stat = stat_t::shutdown_rw;
   } else {
-    fd_stat = fd_stat_t::shutdown_read;
+    fd_stat = stat_t::shutdown_read;
   }
 }
 void channel::shutdown_write() {
   ev_loop->assert_in_loop_thread();
-  if (fd_stat == fd_stat_t::closed || fd_stat == fd_stat_t::shutdown_write ||
-      fd_stat == fd_stat_t::shutdown_rw) {
+  if (fd_stat == stat_t::closed || fd_stat == stat_t::shutdown_write ||
+      fd_stat == stat_t::shutdown_rw) {
     return;
   }
   assert(::shutdown(ev->get_fd(), SHUT_WR) == 0);
-  if (fd_stat == fd_stat_t::shutdown_read) {
-    fd_stat = fd_stat_t::shutdown_rw;
+  if (fd_stat == stat_t::shutdown_read) {
+    fd_stat = stat_t::shutdown_rw;
   } else {
-    fd_stat = fd_stat_t::shutdown_write;
+    fd_stat = stat_t::shutdown_write;
   }
 }
 void channel::shutdown_rw() {
   ev_loop->assert_in_loop_thread();
-  if (fd_stat == fd_stat_t::closed) {
+  if (fd_stat == stat_t::closed) {
     return;
   }
   assert(::shutdown(ev->get_fd(), SHUT_RDWR) == 0);
-  fd_stat = fd_stat_t::shutdown_rw;
+  fd_stat = stat_t::shutdown_rw;
 }
 //默认的连接关闭处理函数
 //行为是将本channel的fd 强制close掉,暂时不关心close_type

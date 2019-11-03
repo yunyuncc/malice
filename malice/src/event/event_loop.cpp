@@ -20,17 +20,20 @@ event_loop::event_loop(int t_ms)
 
   loop_of_this_thread = this;
 
-  //这个函数会将this指针暴漏给event_channel
-  // event_channel会调用event_loop的成员函数
-  //就会出现调用event_loop成员函数(add_event,
-  // mod_event)的时候event_loop还没完全构造完成 这样的模式应该是有安全隐患,
-  // FIXME
-  setup_wakeup_channel();
+  setup_wakeup();
 }
-
-void event_loop::setup_wakeup_channel() {
-  std::unique_ptr<event_channel> chan = std::make_unique<event_channel>(this);
-  wakeup_channel.swap(chan);
+void event_loop::handle_wakeup_event(event *e) {
+  uint64_t one = 1;
+  ssize_t n = ::read(e->get_fd(), &one, sizeof one);
+  assert(n == sizeof(one));
+}
+void event_loop::setup_wakeup() {
+  int wakeup_fd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
+  assert(wakeup_fd != -1);
+  wakeup_event = std::make_unique<event>(wakeup_fd, EPOLLIN);
+  wakeup_event->set_handler(EPOLLIN,
+                            [this](event *e) { handle_wakeup_event(e); });
+  add_event(wakeup_event.get());
 }
 event_loop::~event_loop() {
   ::close(fd);
@@ -119,8 +122,10 @@ void event_loop::run_in_loop(work_t work) {
   wakeup();
 }
 void event_loop::wakeup() {
-  assert(wakeup_channel);
-  wakeup_channel->notify();
+  // write to eventfd
+  uint64_t one = 1;
+  ssize_t n = ::write(wakeup_event->get_fd(), &one, sizeof one);
+  assert(n == sizeof(one));
 }
 
 } // namespace malice::event

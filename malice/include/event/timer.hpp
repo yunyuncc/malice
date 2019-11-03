@@ -12,7 +12,7 @@ public:
   static constexpr int64_t nsec_per_sec = 1 * 1000 * 1000 * 1000;
   using on_time_t = std::function<void(const std::string &name)>;
 
-  timer(event_loop *ev_loop, on_time_t func,
+  timer(std::shared_ptr<event_loop> ev_loop, on_time_t func,
         const std::chrono::duration<Rep, Period> &first_expire,
         const std::chrono::duration<Rep, Period> &period =
             std::chrono::seconds(0),
@@ -49,7 +49,7 @@ private:
     if (on_time)
       on_time(name);
   }
-  event_loop *loop;
+  std::shared_ptr<event_loop> loop;
   on_time_t on_time;
   std::string name;
   int fd;

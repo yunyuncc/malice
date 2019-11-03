@@ -7,17 +7,17 @@
 #include <unistd.h>
 using namespace malice::event;
 TEST_CASE("only on signal_channel can be created") {
-  event_loop loop(-1);
-  signal_channel chan1(&loop);
+  auto loop = std::make_shared<event_loop>(-1);
+  signal_channel chan1(loop);
   try {
-    signal_channel chan2(&loop);
+    signal_channel chan2(loop);
   } catch (const mult_signal_channel &) {
     CHECK(true);
   }
 }
 TEST_CASE("set signal handler fail") {
-  event_loop loop(-1);
-  signal_channel chan(&loop);
+  auto loop = std::make_shared<event_loop>(-1);
+  signal_channel chan(loop);
   try {
     chan.set_signal_handler(-1, nullptr);
   } catch (const set_signal_handler_bad_param &) {
@@ -30,22 +30,22 @@ TEST_CASE("set signal handler fail") {
   }
 }
 TEST_CASE("got signal without a handler deal it") {
-  event_loop loop(-1);
-  signal_channel chan(&loop);
+  auto loop = std::make_shared<event_loop>(-1);
+  signal_channel chan(loop);
   std::async([] { kill(getpid(), SIGUSR1); });
-  loop.wait();
+  loop->wait();
 }
 TEST_CASE("ignore a signal") {
   spdlog::set_level(spdlog::level::debug);
-  event_loop loop(-1);
-  signal_channel chan(&loop);
+  auto loop = std::make_shared<event_loop>(-1);
+  signal_channel chan(loop);
   chan.ignore(SIGUSR1);
   std::async([] { kill(getpid(), SIGUSR1); });
-  loop.wait();
+  loop->wait();
 }
 TEST_CASE("handle SIGTERM and SIGQUIT and SIGPIPE") {
-  event_loop loop(-1);
-  signal_channel chan(&loop);
+  auto loop = std::make_shared<event_loop>(-1);
+  signal_channel chan(loop);
   chan.set_signal_handler(SIGTERM, [](const signalfd_siginfo &siginfo) {
     CHECK(siginfo.ssi_signo == SIGTERM);
   });
@@ -60,5 +60,5 @@ TEST_CASE("handle SIGTERM and SIGQUIT and SIGPIPE") {
     kill(getpid(), SIGQUIT);
     kill(getpid(), SIGPIPE);
   });
-  loop.wait();
+  loop->wait();
 }

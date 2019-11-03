@@ -9,7 +9,8 @@ namespace malice::event {
 class event_channel {
 public:
   using on_event_t = std::function<void(uint64_t)>;
-  event_channel(event_loop *ev_loop, on_event_t ev_handler = nullptr);
+  event_channel(std::shared_ptr<event_loop> ev_loop,
+                on_event_t ev_handler = nullptr);
   ~event_channel();
   void notify(uint64_t val = 1);
 

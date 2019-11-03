@@ -4,6 +4,7 @@
 #include <atomic>
 #include <cassert>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <stdexcept>
 #include <sys/epoll.h>
@@ -11,10 +12,10 @@
 #include <vector>
 
 namespace malice::event {
-//互相依赖
+//打破互相依赖 TODO
 class event_channel;
 
-class event_loop {
+class event_loop : std::enable_shared_from_this<event_loop> {
 public:
   using timeout_handler_t = std::function<void()>;
   using work_t = std::function<void()>;
@@ -41,7 +42,8 @@ public:
   void stop();
 
 private:
-  void setup_wakeup_channel();
+  void handle_wakeup_event(event *e);
+  void setup_wakeup();
   void run_work_in_queue();
   const int fd;
   const int timeout_ms;
@@ -51,7 +53,7 @@ private:
   timeout_handler_t timeout_handler;
   std::vector<work_t> work_queue;
   std::mutex m;
-  std::unique_ptr<event_channel> wakeup_channel;
+  std::unique_ptr<event> wakeup_event;
 };
 CREATE_NEW_EXCEPTION(add_event_fail);
 CREATE_NEW_EXCEPTION(mod_event_fail);

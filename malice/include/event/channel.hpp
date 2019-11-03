@@ -21,7 +21,7 @@ namespace malice::event {
 
 class channel {
 public:
-  enum class fd_stat_t {
+  enum class stat_t {
     open,           //可读可写
     shutdown_read,  //可写
     shutdown_write, //可读
@@ -41,7 +41,7 @@ public:
       std::function<void(int, const std::string &msg, channel *chan)>;
   using on_write_finish_t = std::function<void(channel *chan)>;
 
-  channel(int fd, event_loop *loop,
+  channel(int fd, std::shared_ptr<event_loop> loop,
           size_t init_buf_size = ::malice::base::buffer::init_size);
   ~channel();
   bool buffer_empty() const {
@@ -51,7 +51,7 @@ public:
   void shutdown_write(); //关闭写
   void shutdown_rw();    //关闭读写
   void force_close();    //强制关闭
-  fd_stat_t get_fd_stat() const { return fd_stat; }
+  stat_t get_stat() const { return fd_stat; }
   bool read_buffer_empty() const { return read_buf.readable_size() == 0; }
   bool write_buffer_empty() const { return write_buf.readable_size() == 0; }
 
@@ -97,8 +97,8 @@ private:
   static const int close_event;
   static const int none_event;
   std::unique_ptr<event> ev;
-  event_loop *ev_loop;
-  fd_stat_t fd_stat;
+  std::shared_ptr<event_loop> ev_loop;
+  stat_t fd_stat;
   ::malice::base::buffer read_buf;
   ::malice::base::buffer write_buf;
   on_read_t on_read;

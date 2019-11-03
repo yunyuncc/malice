@@ -17,7 +17,7 @@ namespace malice::event {
 class signal_channel {
 public:
   using on_signal_t = std::function<void(const signalfd_siginfo &siginfo)>;
-  signal_channel(event_loop *ev_loop);
+  signal_channel(std::shared_ptr<event_loop> ev_loop);
   ~signal_channel();
   void ignore(int sig) { set_signal_handler(sig, nullptr); };
   void set_signal_handler(int sig, on_signal_t func);

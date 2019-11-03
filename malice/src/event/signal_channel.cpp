@@ -8,7 +8,7 @@ using spdlog::warn;
 static std::atomic<uint8_t> signal_channel_num = 0;
 namespace malice::event {
 
-signal_channel::signal_channel(event_loop *loop) {
+signal_channel::signal_channel(std::shared_ptr<event_loop> loop) {
   if (signal_channel_num > 0) {
     throw mult_signal_channel("you can only create one signal_channel");
   }

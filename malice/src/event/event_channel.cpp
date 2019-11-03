@@ -3,7 +3,8 @@
 using malice::base::errno_str;
 using spdlog::error;
 namespace malice::event {
-event_channel::event_channel(event_loop *ev_loop, on_event_t ev_handler)
+event_channel::event_channel(std::shared_ptr<event_loop> ev_loop,
+                             on_event_t ev_handler)
     : on_event(ev_handler) {
   fd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
   assert(fd != -1);
